@@ -1,0 +1,140 @@
+﻿
+@{
+    ViewBag.Title = "create";
+}
+
+<h2>create</h2>
+<input id="id" type="hidden" />
+<label>
+    <select id="country_id">
+        <option value="">---select country--</option>
+    </select>
+
+</label>
+
+<label>
+    <select id="state_id">
+        <option value="">---select state--</option>
+    </select>
+
+</label>
+<label>
+    <select id="city_id">
+        <option value="">---select city--</option>
+    </select>
+
+</label>
+<input name="data" value="c#" type="checkbox" />c#
+<input name="data" value="mvc" type="checkbox" />mvc
+<input name="data" value="mvcc" type="checkbox" />mvcc
+
+
+
+<button id="save">Submit</button>
+
+<table id="mytable" class="table">
+</table>
+
+
+@section scripts{
+    <script src="~/Scripts/jquery.dataTables.js"></script>
+    <script>
+        $(function () {
+            $.get({
+                url: "/Cascading/getallcountry"
+            }).then(function (data) {
+                $.each(data, function (index, value) {
+                    $("#country_id").append(" <option value='" + value.id + "'>" + value.name + "</option>");
+
+                });
+            })
+            $("#country_id").on("change", function () {
+                var country_id = $("#country_id").val();
+                $("#state_id").empty();
+                $("#state_id").append("<option value=''>---select state--</option>");
+                $.get({
+                    url: "/Cascading/getallstate/" + country_id
+                }).then(function (data) {
+                    $.each(data, function (index, value) {
+                        $("#state_id").append(" <option value='" + value.id + "'>" + value.name + "</option>");
+
+                    });
+                })
+            });
+            $("#state_id").on("change", function () {
+                var state_id = $("#state_id").val();
+                $("#city_id").empty();
+                $("#city_id").append("<option value=''>---select city--</option>");
+                $.get({
+                    url: "/Cascading/getallcity/" + state_id
+                }).then(function (data) {
+                    $.each(data, function (index, value) {
+                        $("#city_id").append(" <option value='" + value.id + "'>" + value.name + "</option>");
+
+                    });
+                })
+            });
+            $("#save").on("click", function () {
+                let data = {
+                    id: $("#id").val(),
+                    country_id: $("#country_id").val(),
+                    state_id: $("#state_id").val(),
+                    city_id: $("#city_id").val()
+                }
+                platfromname: $("input[name ='data[]:checked']").get().map(x => x.value),
+                    $.post({
+                        url: "/Cascading/save",
+                        data: { sa: data, platfromname: platfromname }
+                    }).then(function (data) {
+                        alert("sucess");
+                        dt.ajax.reload();
+                    });
+            });
+            let dt = $("#mytable").DataTable({
+                ajax: { url: "/Cascading/getdata", dataSrc: "" },
+                columns: [
+                    { "data": "id", "title": "id" },
+                    { "data": "countryname", "title": "countryname" },
+                    { "data": "statename", "title": "statename" },
+                    { "data": "cityname", "title": "cityname" },
+                    {
+                        "data": "id", "title": "Action", render: (d) => `
+                                        <button  class="btn btn-success edit-data" data-id=${d}>edit</button>
+                                        <button  class="btn btn-danger delete-data" data-id=${d}>edit</button>
+                                   ` }
+                ]
+            });
+            $("#mytable").on("click", ".delete-data", function (e) {
+                var id = e.currentTarget.dataset.id;
+                if (confirm("Are you sure delete this file")) {
+                    $.post({
+                        url: "/Cascading/delete/" + id
+                    }).then(function (data) {
+                        alert("sucess");
+                        dt.ajax.reload();
+                    });
+                }
+            });
+            $("#mytable").on("click", ".edit-data", function (e) {
+                var id = e.currentTarget.dataset.id;
+                $.get({
+                    url: "/Cascading/edit/" + id
+                }).then(function (data) {
+                    console.log(data);
+                    $("#id").val(data.id);
+                    $("#country_id").val(data.country_id).trigger("change");
+                    setTimeout(function () {
+                        $("#state_id").val(data.state_id).trigger("change");
+                    }, 1000);
+                    setTimeout(function () {
+                        $("#city_id").val(data.city_id);
+                    }, 3000);
+                });
+
+            });
+
+
+        });
+    </script>
+
+}
